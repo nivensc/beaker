@@ -29,6 +29,7 @@ module Beaker
         v_file << "    v.vm.box = '#{host['box']}'\n"
         v_file << "    v.vm.box_url = '#{host['box_url']}'\n" unless host['box_url'].nil?
         v_file << "    v.vm.base_mac = '#{randmac}'\n"
+        v_file << "    v.vm.boot_timeout = 1200\n"
         v_file << "    v.vm.network :private_network, ip: \"#{host['ip'].to_s}\", :netmask => \"#{host['netmask'] ||= "255.255.0.0"}\"\n"
         v_file << "  end\n"
         @logger.debug "created Vagrantfile for VagrantHost #{host.name}"
@@ -45,7 +46,9 @@ module Beaker
     def hack_etc_hosts hosts
       etc_hosts = "127.0.0.1\tlocalhost localhost.localdomain\n"
       hosts.each do |host|
-        etc_hosts += "#{host['ip'].to_s}\t#{host.name}\n"
+        domain = get_domain_name(host)
+        puppet_host_string = (host['roles'].include?('master') ? ' puppet' : '')
+        etc_hosts += "#{host['ip'].to_s}\t#{host.name}\t#{host.name}.#{domain}#{puppet_host_string}\n"
       end
       hosts.each do |host|
         set_etc_hosts(host, etc_hosts)
